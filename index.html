@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WebAR Geolocalizado - Base</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- 
+      importacao do a-frame e dos modulos de localizacao do ar.js 3.4.7.
+      usando a versao 3.4.7 fixa porque a branch master vira e mexe quebra a projecao.
+    -->
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <!-- a ordem desses dois scripts importa: o threex-location precisa carregar antes do aframe-ar, senao o gps-new-camera nao registra -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/three.js/build/ar-threex-location-only.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
+</head>
+<body>
+
+    <!-- 
+      hud temporario so pra saber na rua se o gps ja travou a posicao 
+      ou se a tela ta vazia por falta de precisao do sensor.
+    -->
+    <div id="hud-status">Aguardando sinal do GPS...</div>
+
+    <!-- 
+      configuracao da cena principal do a-frame integrada ao ar.js.
+      desativado a interface de debug padrao e o botao de vr.
+    -->
+    <a-scene 
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
+        renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true">
+
+        <a-assets>
+            <!-- se o caminho ou o cors do glb falhar, a entidade nasce na cena mas fica invisivel sem dar erro claro no console -->
+            <a-asset-item id="modelo-obra" src="assets/models/modelo-teste.glb"></a-asset-item>
+        </a-assets>
+
+        <!-- 
+          camera que converte lat/lon em coordenadas de mundo (spherical mercator).
+          o gpsMinDistance evita que o modelo fique sambando na tela com qualquer oscilacao minima do sensor.
+        -->
+        <a-camera 
+            gps-new-camera="gpsMinDistance: 5; positionMinAccuracy: 100"
+            rotation-reader>
+        </a-camera>
+
+    </a-scene>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
