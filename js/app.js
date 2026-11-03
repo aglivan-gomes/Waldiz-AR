@@ -4,11 +4,27 @@
   e mantem o painel do topo atualizado com a latitude, longitude e margem de erro em metros.
 */
 
-// coordenada exata onde o modelo vai ficar ancorado
-const COORDENADA_OBRA = {
-    latitude: -4.971222,
-    longitude: -39.016225, 
-};
+// lista das obras com seus respectivos ids de modelo e coordenadas exatas onde vao ficar ancoradas
+const OBRAS = [
+    {
+        nome: 'Casa da Fazenda',
+        modelo: '#glb-casa-fazenda',
+        latitude: -4.971222,
+        longitude: -39.016225
+    },
+    {
+        nome: 'Hotel NSF',
+        modelo: '#glb-hotel-nsf',
+        latitude: null, // substituir pela coordenada real
+        longitude: null
+    },
+    {
+        nome: 'Prefeitura Antiga',
+        modelo: '#glb-prefeitura-antiga',
+        latitude: null, // substituir pela coordenada real
+        longitude: null
+    }
+];
 
 window.addEventListener('load', () => {
     let modeloInstanciado = false;
@@ -45,29 +61,37 @@ window.addEventListener('load', () => {
         hudGps.innerText = `GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
 
         if (!modeloInstanciado) {
-            hudModelo.innerText = 'Modelo: carregando .glb...';
+            // filtra so as obras que ja tem coordenada preenchida pra nao quebrar a projecao do three.js com valor nulo
+            const obrasAtivas = OBRAS.filter(obra => obra.latitude !== null && obra.longitude !== null);
+            let carregados = 0;
 
-            const entidade = document.createElement('a-entity');
+            hudModelo.innerText = `Modelo: carregando (0/${obrasAtivas.length})...`;
 
-            // nao pode misturar com o gps-entity-place antigo senao o modelo ignora a coordenada e cola na tela
-            entidade.setAttribute('gps-new-entity-place', {
-                latitude: COORDENADA_OBRA.latitude,
-                longitude: COORDENADA_OBRA.longitude
+            obrasAtivas.forEach((obra) => {
+                const entidade = document.createElement('a-entity');
+
+                // nao pode misturar com o gps-entity-place antigo senao o modelo ignora a coordenada e cola na tela
+                entidade.setAttribute('gps-new-entity-place', {
+                    latitude: obra.latitude,
+                    longitude: obra.longitude
+                });
+
+                entidade.setAttribute('gltf-model', obra.modelo);
+                entidade.setAttribute('scale', '1 1 1');
+
+                entidade.addEventListener('model-loaded', () => {
+                    carregados++;
+                    hudModelo.innerText = `Modelo: ${carregados}/${obrasAtivas.length} ativos na cena`;
+                });
+
+                entidade.addEventListener('model-error', (erro) => {
+                    hudModelo.innerText = `Modelo: erro ao carregar ${obra.nome}`;
+                    console.error(`Falha ao carregar o arquivo glb (${obra.nome}):`, erro);
+                });
+
+                cena.appendChild(entidade);
             });
 
-            entidade.setAttribute('gltf-model', '#modelo-obra');
-            entidade.setAttribute('scale', '1 1 1');
-
-            entidade.addEventListener('model-loaded', () => {
-                hudModelo.innerText = `Modelo: ativo em ${COORDENADA_OBRA.latitude}, ${COORDENADA_OBRA.longitude}`;
-            });
-
-            entidade.addEventListener('model-error', (erro) => {
-                hudModelo.innerText = 'Modelo: erro ao carregar .glb';
-                console.error('Falha ao carregar o arquivo glb:', erro);
-            });
-
-            cena.appendChild(entidade);
             modeloInstanciado = true;
         }
     });

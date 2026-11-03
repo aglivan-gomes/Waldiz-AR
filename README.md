@@ -1,12 +1,12 @@
 # Waldiz-AR
 
-Estrutura inicial usando A-Frame e AR.js (v3.4.7) pra validar a captura do GPS e renderizar um `.glb` na cena sem precisar de marcador.
+Estrutura inicial usando A-Frame e AR.js (v3.4.7) pra validar a captura do GPS e renderizar um `.glb` na cena.
 
 ## Como testar
 
 O navegador do celular bloqueia a câmera e o GPS se abrir por IP local sem HTTPS. Pra testar rápido, é melhor subir no GitHub Pages / Firebase Hosting ou usar o port forwarding do Chrome (`chrome://inspect/#devices`) com o cabo USB ligado no PC.
 
-No `js/app.js`, o código pega a primeira leitura do GPS e soma `0.0002` na latitude pra jogar o modelo uns 20 metros pro norte de onde o celular estiver. Fiz isso só pra validar se o modelo aparece na tela sem precisar ir até a coordenada final toda vez. Depois é só trocar pelos valores fixos.
+No `js/app.js`, as obras (`Casa da Fazenda`, `Hotel NSF` e `Prefeitura Antiga`) ficam listadas no array `OBRAS` com suas coordenadas fixas e o ID do respectivo `.glb`. O script ignora automaticamente qualquer obra que ainda esteja com coordenada `null` pra evitar erro de projeção enquanto os outros modelos ainda estão sendo adicionados.
 
 ## Anotações e referências (problemas do AR.js)
 
