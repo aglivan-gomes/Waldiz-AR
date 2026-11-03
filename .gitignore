@@ -1,0 +1,26 @@
+# arquivos de sistema e indices de miniatura
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# configuracoes locais de editor
+.vscode/
+.idea/
+*.swp
+
+# dependencias locais e logs de deploy
+node_modules/
+.firebase/
+firebase-debug.log
+.env
+.env.local
+
+# arquivos brutos de modelagem e textura. 
+# pro repositorio so deve ir o .glb/.gltf final otimizado pra nao estourar o limite do github nem travar o carregamento no 4g
+*.blend
+*.blend1
+*.fbx
+*.obj
+*.mtl
+*.psd
+*.xcf

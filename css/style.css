@@ -1,0 +1,34 @@
+/* 
+  reset da pagina pra travar o canvas da camera na tela inteira sem criar rolagem
+  e posicionamento do painel de informacoes por cima da camada de video do a-frame.
+*/
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: monospace;
+}
+
+#hud-status {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 380px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #00ff88;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    /* z-index alto porque o a-frame tenta cobrir as divs normais */
+    z-index: 99999;
+    pointer-events: none;
+}
