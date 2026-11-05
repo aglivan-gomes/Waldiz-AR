@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Waldiz-AR</title>
-    <link rel="stylesheet" href="css/style.css?v=2">
+    <link rel="stylesheet" href="css/style.css?v=3">
 
     <!-- 
       importacao do a-frame e dos pacotes de geolocalizacao do ar.js 3.4.7.
@@ -24,6 +24,20 @@
         <div id="hud-gps">GPS: aguardando sensor...</div>
         <div id="hud-precisao">Precisão: --</div>
         <div id="hud-modelo">Modelo: aguardando GPS...</div>
+    </div>
+
+    <!-- 
+      caixa de descricao e narracao que so aparece quando o usuario entra no raio de 50m da obra.
+      fica presa na parte de baixo da tela pra deixar o centro livre pro modelo 3d.
+    -->
+    <div id="caixa-obra" class="escondido">
+        <div id="topo-caixa">
+            <span id="titulo-obra">Nome da Obra</span>
+            <!-- navegadores mobile bloqueiam autoplay de audio, entao o disparo precisa vir do clique direto nesse botao -->
+            <button id="btn-audio" type="button">Play Audio</button>
+        </div>
+        <p id="texto-descricao"></p>
+        <audio id="audio-narracao" preload="none"></audio>
     </div>
 
     <!-- 
@@ -54,6 +68,7 @@
 
     </a-scene>
 
-    <script src="js/app.js"></script>
+    <!-- importacao do script principal como modulo javascript -->
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>

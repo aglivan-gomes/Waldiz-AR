@@ -32,3 +32,62 @@ html, body {
     z-index: 99999;
     pointer-events: none;
 }
+
+/* 
+  caixa de dialogo inferior com altura limitada pra nao tampar a obra na camera.
+  diferente do hud do topo, aqui o pointer-events precisa ser auto senao o canvas do a-frame engole o clique do botao de play.
+*/
+#caixa-obra {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 92%;
+    max-width: 420px;
+    max-height: 26vh;
+    background-color: rgba(0, 0, 0, 0.85);
+    color: #ffffff;
+    padding: 12px 14px;
+    border-radius: 8px;
+    z-index: 99999;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.escondido {
+    display: none !important;
+}
+
+#topo-caixa {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 6px;
+}
+
+#titulo-obra {
+    font-size: 14px;
+    font-weight: bold;
+    color: #00ff88;
+}
+
+#btn-audio {
+    background-color: #00ff88;
+    color: #000000;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#texto-descricao {
+    font-size: 12px;
+    line-height: 1.4;
+    overflow-y: auto;
+}
