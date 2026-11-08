@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Waldiz-AR</title>
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=4">
 
     <!-- 
       importacao do a-frame e dos pacotes de geolocalizacao do ar.js 3.4.7.
@@ -24,6 +24,15 @@
         <div id="hud-gps">GPS: aguardando sensor...</div>
         <div id="hud-precisao">Precisão: --</div>
         <div id="hud-modelo">Modelo: aguardando GPS...</div>
+    </div>
+
+    <!-- 
+      indicador de direcao e distancia que aponta para a obra mais proxima
+      para guiar o usuario ate o raio de ativacao.
+    -->
+    <div id="hud-guia" class="escondido">
+        <div id="seta-direcao">&uarr;</div>
+        <div id="texto-guia">Calculando rota...</div>
     </div>
 
     <!-- 
@@ -59,11 +68,12 @@
         <!-- 
           camera da api nova de localizacao. 
           no a-frame 1.6 precisa desligar o look-controls padrao e usar o arjs-device-orientation-controls pra bussola alinhar com o norte.
+          smoothingFactor em 0.4 evita que o modelo saia do lugar e volte com atraso ao girar o celular (em 0.1 fica pesado demais).
         -->
         <a-camera 
             look-controls-enabled="false"
-            arjs-device-orientation-controls="smoothingFactor: 0.1"
-            gps-new-camera="gpsMinDistance: 5; positionMinAccuracy: 100">
+            arjs-device-orientation-controls="smoothingFactor: 0.4"
+            gps-new-camera="gpsMinDistance: 10; positionMinAccuracy: 30; gpsTimeInterval: 3000">
         </a-camera>
 
     </a-scene>

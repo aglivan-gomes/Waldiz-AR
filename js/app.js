@@ -6,6 +6,7 @@
 import { OBRAS } from './obras.js';
 
 const RAIO_ATIVACAO_METROS = 50;
+const AUDIO_PADRAO_TESTE = 'assets/audio/audio-teste.mp3';
 
 /*
   calculo de distancia em metros entre dois pares de coordenadas usando a formula de haversine.
@@ -27,13 +28,39 @@ function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
     return raioTerra * c;
 }
 
+/*
+  calcula o angulo de direcao (azimute/bearing de 0 a 360 graus em relacao ao norte)
+  do ponto onde o usuario esta ate a coordenada da obra.
+*/
+function calcularAzimuteGraus(lat1, lon1, lat2, lon2) {
+    const paraRad = (graus) => (graus * Math.PI) / 180;
+    const paraGraus = (rad) => (rad * 180) / Math.PI;
+
+    const phi1 = paraRad(lat1);
+    const phi2 = paraRad(lat2);
+    const deltaLon = paraRad(lon2 - lon1);
+
+    const y = Math.sin(deltaLon) * Math.cos(phi2);
+    const x =
+        Math.cos(phi1) * Math.sin(phi2) -
+        Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLon);
+
+    const brng = paraGraus(Math.atan2(y, x));
+    return (brng + 360) % 360;
+}
+
 window.addEventListener('load', () => {
     let modeloInstanciado = false;
     let obraAtivaNoPainel = null;
+    let azimuteObraMaisProxima = null;
 
     const hudGps = document.getElementById('hud-gps');
     const hudPrecisao = document.getElementById('hud-precisao');
     const hudModelo = document.getElementById('hud-modelo');
+
+    const hudGuia = document.getElementById('hud-guia');
+    const setaDirecao = document.getElementById('seta-direcao');
+    const textoGuia = document.getElementById('texto-guia');
 
     const caixaObra = document.getElementById('caixa-obra');
     const tituloObra = document.getElementById('titulo-obra');
@@ -48,6 +75,22 @@ window.addEventListener('load', () => {
         hudGps.innerText = 'GPS: erro ao localizar componente da camera';
         return;
     }
+
+    /*
+      atualiza o giro da seta de direcao na tela combinando o azimute da obra com a bussola da camera.
+      precisa extrair o euler na ordem YXZ pra inclinacao vertical do celular nao distorcer o angulo do norte.
+    */
+    const eulerCamera = new AFRAME.THREE.Euler(0, 0, 0, 'YXZ');
+    function atualizarSetaDirecao() {
+        if (azimuteObraMaisProxima !== null && cameraEl.object3D) {
+            eulerCamera.setFromQuaternion(cameraEl.object3D.quaternion, 'YXZ');
+            const giroCameraGraus = AFRAME.THREE.MathUtils.radToDeg(eulerCamera.y);
+            const anguloFinal = azimuteObraMaisProxima + giroCameraGraus;
+            setaDirecao.style.transform = `rotate(${anguloFinal.toFixed(1)}deg)`;
+        }
+        requestAnimationFrame(atualizarSetaDirecao);
+    }
+    requestAnimationFrame(atualizarSetaDirecao);
 
     /*
       controle manual do botao de play/pause no topo da caixa de descricao.
@@ -69,6 +112,13 @@ window.addEventListener('load', () => {
 
     audioNarracao.addEventListener('ended', () => {
         btnAudio.innerText = 'Play Audio';
+    });
+
+    // se o mp3 especifico da obra ainda nao estiver na pasta e der 404, carrega o audio de teste pra nao quebrar o play
+    audioNarracao.addEventListener('error', () => {
+        if (!audioNarracao.src.endsWith('audio-teste.mp3')) {
+            audioNarracao.src = AUDIO_PADRAO_TESTE;
+        }
     });
 
 // monitora a precisao bruta do sensor do celular e possiveis bloqueios de permissao.
@@ -109,10 +159,12 @@ window.addEventListener('load', () => {
 
                 entidade.setAttribute('gltf-model', obra.modelo);
                 entidade.setAttribute('scale', '1 1 1');
+                // inicia invisivel pra nao mostrar os 3 modelos de longe; so libera quando entrar nos 50m
+                entidade.setAttribute('visible', false);
 
                 entidade.addEventListener('model-loaded', () => {
                     carregados++;
-                    hudModelo.innerText = `Modelo: ${carregados}/${obrasAtivas.length} ativos na cena`;
+                    hudModelo.innerText = `Modelo: ${carregados}/${obrasAtivas.length} prontos na cena`;
                 });
 
                 entidade.addEventListener('model-error', (erro) => {
@@ -121,25 +173,48 @@ window.addEventListener('load', () => {
                 });
 
                 cena.appendChild(entidade);
+                obra.entidade = entidade;
             });
 
             modeloInstanciado = true;
         }
 
         /*
-          verifica qual obra ativa esta mais perto do usuario neste momento.
-          se estiver a 50 metros ou menos, abre a caixa de dialogo; se sair do raio, esconde a caixa e pausa a narracao.
+          verifica a distancia de cada obra ativa para esconder os modelos que estao longe
+          e exibir apenas o modelo e a caixa de dialogo da obra que estiver dentro do raio de 50 metros.
         */
         let obraMaisProxima = null;
         let menorDistancia = Infinity;
 
         obrasAtivas.forEach((obra) => {
             const distancia = calcularDistanciaMetros(latitude, longitude, obra.latitude, obra.longitude);
+
+            if (obra.entidade) {
+                obra.entidade.setAttribute('visible', distancia <= RAIO_ATIVACAO_METROS);
+            }
+
             if (distancia < menorDistancia) {
                 menorDistancia = distancia;
                 obraMaisProxima = obra;
             }
         });
+
+        if (obraMaisProxima) {
+            hudGuia.classList.remove('escondido');
+            azimuteObraMaisProxima = calcularAzimuteGraus(
+                latitude,
+                longitude,
+                obraMaisProxima.latitude,
+                obraMaisProxima.longitude
+            );
+
+            const distArredondada = Math.round(menorDistancia);
+            if (menorDistancia <= RAIO_ATIVACAO_METROS) {
+                textoGuia.innerText = `No local: ${obraMaisProxima.nome} (${distArredondada}m) - aponte na direção da seta`;
+            } else {
+                textoGuia.innerText = `Mais próxima: ${obraMaisProxima.nome} a ${distArredondada}m`;
+            }
+        }
 
         if (obraMaisProxima && menorDistancia <= RAIO_ATIVACAO_METROS) {
             caixaObra.classList.remove('escondido');
@@ -151,6 +226,7 @@ window.addEventListener('load', () => {
                 textoDescricao.innerText = obraMaisProxima.descricao;
                 audioNarracao.pause();
                 audioNarracao.src = obraMaisProxima.audio;
+                audioNarracao.load();
                 btnAudio.innerText = 'Play Audio';
             }
         } else {
