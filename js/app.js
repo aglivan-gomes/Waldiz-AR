@@ -52,15 +52,21 @@ function calcularAzimuteGraus(lat1, lon1, lat2, lon2) {
 window.addEventListener('load', () => {
     let modeloInstanciado = false;
     let obraAtivaNoPainel = null;
-    let azimuteObraMaisProxima = null;
+    let azimuteObraAlvo = null;
+    let ultimaPosicaoUsuario = null;
 
     const hudGps = document.getElementById('hud-gps');
     const hudPrecisao = document.getElementById('hud-precisao');
     const hudModelo = document.getElementById('hud-modelo');
 
+    const btnMenu = document.getElementById('btn-menu');
+    const modalBoasVindas = document.getElementById('modal-boas-vindas');
+    const btnFecharModal = document.getElementById('btn-fechar-modal');
+
     const hudGuia = document.getElementById('hud-guia');
     const setaDirecao = document.getElementById('seta-direcao');
-    const textoGuia = document.getElementById('texto-guia');
+    const labelGuia = document.getElementById('label-guia');
+    const selectDestino = document.getElementById('select-destino');
 
     const caixaObra = document.getElementById('caixa-obra');
     const tituloObra = document.getElementById('titulo-obra');
@@ -71,21 +77,77 @@ window.addEventListener('load', () => {
     const cena = document.querySelector('a-scene');
     const cameraEl = document.querySelector('[gps-new-camera]');
 
+    /*
+      abertura e fechamento da caixa de boas-vindas pelo botao superior direito.
+    */
+    btnFecharModal.addEventListener('click', () => {
+        modalBoasVindas.classList.add('escondido');
+    });
+
+    btnMenu.addEventListener('click', () => {
+        modalBoasVindas.classList.remove('escondido');
+    });
+
     if (!cameraEl) {
         hudGps.innerText = 'GPS: erro ao localizar componente da camera';
         return;
     }
 
+    // filtra so as obras que ja tem coordenada preenchida pra nao quebrar a projecao do three.js com valor nulo
+    const obrasAtivas = OBRAS.filter(obra => obra.latitude !== null && obra.longitude !== null);
+
     /*
-      atualiza o giro da seta de direcao na tela combinando o azimute da obra com a bussola da camera.
+      preenche o seletor de destino com as obras disponiveis e recalcula o angulo da seta
+      sempre que o usuario escolher outra obra manualmente na lista.
+    */
+    obrasAtivas.forEach((obra, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.innerText = obra.nome;
+        selectDestino.appendChild(option);
+    });
+
+    const atualizarAlvoDaSeta = () => {
+        if (!ultimaPosicaoUsuario || obrasAtivas.length === 0) return;
+
+        const obraEscolhida = obrasAtivas[Number(selectDestino.value)];
+        if (!obraEscolhida) return;
+
+        azimuteObraAlvo = calcularAzimuteGraus(
+            ultimaPosicaoUsuario.latitude,
+            ultimaPosicaoUsuario.longitude,
+            obraEscolhida.latitude,
+            obraEscolhida.longitude
+        );
+
+        const distAlvo = Math.round(
+            calcularDistanciaMetros(
+                ultimaPosicaoUsuario.latitude,
+                ultimaPosicaoUsuario.longitude,
+                obraEscolhida.latitude,
+                obraEscolhida.longitude
+            )
+        );
+
+        if (distAlvo <= RAIO_ATIVACAO_METROS) {
+            labelGuia.innerText = `No local (${distAlvo}m) - aponte na direção da seta ou troque a obra:`;
+        } else {
+            labelGuia.innerText = `Guiando até (${distAlvo}m) - toque abaixo para trocar:`;
+        }
+    };
+
+    selectDestino.addEventListener('change', atualizarAlvoDaSeta);
+
+    /*
+      atualiza o giro da seta de direcao na tela combinando o azimute da obra escolhida com a bussola da camera.
       precisa extrair o euler na ordem YXZ pra inclinacao vertical do celular nao distorcer o angulo do norte.
     */
     const eulerCamera = new AFRAME.THREE.Euler(0, 0, 0, 'YXZ');
     function atualizarSetaDirecao() {
-        if (azimuteObraMaisProxima !== null && cameraEl.object3D) {
+        if (azimuteObraAlvo !== null && cameraEl.object3D) {
             eulerCamera.setFromQuaternion(cameraEl.object3D.quaternion, 'YXZ');
             const giroCameraGraus = AFRAME.THREE.MathUtils.radToDeg(eulerCamera.y);
-            const anguloFinal = azimuteObraMaisProxima + giroCameraGraus;
+            const anguloFinal = azimuteObraAlvo + giroCameraGraus;
             setaDirecao.style.transform = `rotate(${anguloFinal.toFixed(1)}deg)`;
         }
         requestAnimationFrame(atualizarSetaDirecao);
@@ -137,11 +199,11 @@ window.addEventListener('load', () => {
 
     cameraEl.addEventListener('gps-camera-update-position', (evento) => {
         const { latitude, longitude } = evento.detail.position;
+        ultimaPosicaoUsuario = { latitude, longitude };
 
         hudGps.innerText = `GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
 
-        // filtra so as obras que ja tem coordenada preenchida pra nao quebrar a projecao do three.js com valor nulo
-        const obrasAtivas = OBRAS.filter(obra => obra.latitude !== null && obra.longitude !== null);
+        const primeiraLeitura = !modeloInstanciado;
 
         if (!modeloInstanciado) {
             let carregados = 0;
@@ -180,40 +242,39 @@ window.addEventListener('load', () => {
         }
 
         /*
-          verifica a distancia de cada obra ativa para esconder os modelos que estao longe
-          e exibir apenas o modelo e a caixa de dialogo da obra que estiver dentro do raio de 50 metros.
+          verifica a distancia de cada obra ativa para esconder os modelos que estao longe,
+          atualiza a distancia de cada opcao no seletor da seta e abre a caixa de dialogo
+          automaticamente para a obra que estiver dentro do raio de 50 metros.
         */
         let obraMaisProxima = null;
+        let indiceMaisProxima = 0;
         let menorDistancia = Infinity;
 
-        obrasAtivas.forEach((obra) => {
+        obrasAtivas.forEach((obra, index) => {
             const distancia = calcularDistanciaMetros(latitude, longitude, obra.latitude, obra.longitude);
 
             if (obra.entidade) {
                 obra.entidade.setAttribute('visible', distancia <= RAIO_ATIVACAO_METROS);
             }
 
+            if (selectDestino.options[index]) {
+                selectDestino.options[index].innerText = `${obra.nome} (${Math.round(distancia)}m)`;
+            }
+
             if (distancia < menorDistancia) {
                 menorDistancia = distancia;
                 obraMaisProxima = obra;
+                indiceMaisProxima = index;
             }
         });
 
-        if (obraMaisProxima) {
+        if (obrasAtivas.length > 0) {
             hudGuia.classList.remove('escondido');
-            azimuteObraMaisProxima = calcularAzimuteGraus(
-                latitude,
-                longitude,
-                obraMaisProxima.latitude,
-                obraMaisProxima.longitude
-            );
-
-            const distArredondada = Math.round(menorDistancia);
-            if (menorDistancia <= RAIO_ATIVACAO_METROS) {
-                textoGuia.innerText = `No local: ${obraMaisProxima.nome} (${distArredondada}m) - aponte na direção da seta`;
-            } else {
-                textoGuia.innerText = `Mais próxima: ${obraMaisProxima.nome} a ${distArredondada}m`;
+            // na primeira leitura do gps ja seleciona a obra mais proxima como destino inicial
+            if (primeiraLeitura) {
+                selectDestino.value = String(indiceMaisProxima);
             }
+            atualizarAlvoDaSeta();
         }
 
         if (obraMaisProxima && menorDistancia <= RAIO_ATIVACAO_METROS) {

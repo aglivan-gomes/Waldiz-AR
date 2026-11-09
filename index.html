@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Waldiz-AR</title>
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/style.css?v=5">
 
     <!-- 
       importacao do a-frame e dos pacotes de geolocalizacao do ar.js 3.4.7.
@@ -26,13 +26,42 @@
         <div id="hud-modelo">Modelo: aguardando GPS...</div>
     </div>
 
+    <!-- botao no canto superior direito pra reabrir o quadro de instrucoes quando precisar -->
+    <button id="btn-menu" type="button">Info</button>
+
     <!-- 
-      indicador de direcao e distancia que aponta para a obra mais proxima
-      para guiar o usuario ate o raio de ativacao.
+      indicador de direcao e distancia com seletor de destino.
+      permite trocar manualmente pra qual obra a seta aponta depois de visitar a primeira.
     -->
     <div id="hud-guia" class="escondido">
         <div id="seta-direcao">&uarr;</div>
-        <div id="texto-guia">Calculando rota...</div>
+        <div id="bloco-destino">
+            <label for="select-destino" id="label-guia">Guiar até:</label>
+            <select id="select-destino"></select>
+        </div>
+    </div>
+
+    <!-- 
+      caixa de dialogo inicial que explica o projeto, recomenda o ponto de partida
+      e alerta sobre seguranca na rua. pode ser reaberta pelo botao info no topo.
+    -->
+    <div id="modal-boas-vindas">
+        <div id="caixa-modal">
+            <h2>Bem-vindo ao Waldiz-AR</h2>
+            <p>Este site é uma experiência de realidade aumentada para visitar reconstruções 3D de algumas obras da coleção <strong>Quixadá Antigo</strong>, do artista Waldizar Viana, associadas por GPS a pontos reais da cidade.</p>
+            <p><strong>Como funciona:</strong> Use a seta no topo da tela para ir até o local (toque no nome da obra na barra superior quando quiser mudar para a próxima). Ao chegar a 50 metros, o modelo 3D, a descrição e o áudio aparecem automaticamente.</p>
+            <p><strong>Recomendação:</strong> Iniciar na Praça José de Barros (Praça do Leão).</p>
+            <div id="lista-obras-modal">
+                <strong>Obras disponíveis:</strong>
+                <ul>
+                    <li>Casa da Fazenda</li>
+                    <li>Prefeitura Antiga</li>
+                    <li>Hotel Nossa Senhora de Fátima</li>
+                </ul>
+            </div>
+            <p id="aviso-seguranca"><strong>Atenção:</strong> Tome cuidado ao andar pela rua olhando o celular, mantenha-se atento ao seu redor.</p>
+            <button id="btn-fechar-modal" type="button">Entendi, começar</button>
+        </div>
     </div>
 
     <!-- 
